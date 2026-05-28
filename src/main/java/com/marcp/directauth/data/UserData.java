@@ -2,7 +2,7 @@ package com.marcp.directauth.data;
 
 public class UserData {
     private String username; // Nombre en minúsculas (clave)
-    private String passwordHash; // Hash BCrypt
+    private String passwordHash; // Hash PBKDF2WithHmacSHA256 (ver LoginManager)
     private boolean isPremium; // Si es cuenta premium verificada
     private String onlineUUID; // UUID online si es premium (null si no)
     
