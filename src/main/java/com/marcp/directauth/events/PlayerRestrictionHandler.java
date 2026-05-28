@@ -2,9 +2,10 @@ package com.marcp.directauth.events;
 
 import com.marcp.directauth.DirectAuth;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ClientboundRemoveMobEffectPacket;
+import net.minecraft.network.protocol.game.ClientboundUpdateMobEffectPacket;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.common.util.TriState;
@@ -31,7 +32,18 @@ public class PlayerRestrictionHandler {
 
     public static void removeAnchor(ServerPlayer player) {
         anchorPositions.remove(player.getUUID());
-        player.removeAllEffects();
+    }
+
+    public static void hideEffectsFromClient(ServerPlayer player) {
+        for (MobEffectInstance instance : player.getActiveEffects()) {
+            player.connection.send(new ClientboundRemoveMobEffectPacket(player.getId(), instance.getEffect()));
+        }
+    }
+
+    public static void resyncEffectsToClient(ServerPlayer player) {
+        for (MobEffectInstance instance : player.getActiveEffects()) {
+            player.connection.send(new ClientboundUpdateMobEffectPacket(player.getId(), instance, false));
+        }
     }
     
     private boolean isNotAuth(Object entity) {
@@ -64,27 +76,16 @@ public class PlayerRestrictionHandler {
                 }
 
                 UUID uuid = player.getUUID();
-                
+
                 if (!anchorPositions.containsKey(uuid)) {
                     anchorPositions.put(uuid, player.position());
                 }
-                
-                // Efectos de restricción
-                player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 60, 255, false, false));
-                player.addEffect(new MobEffectInstance(MobEffects.JUMP, 60, 250, false, false));
-                player.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 60, 1, false, false));
-                
-                // Forzar nivel de comida para evitar intentos de regeneración del motor del juego
-                // (Aunque LivingHealEvent ya lo bloquea, esto evita la animación de temblor de hambre o saturación)
-                if (player.getFoodData().getFoodLevel() > 0) {
-                     // Opcional: Mantener la comida estática o dejarla como está. 
-                     // Con LivingHealEvent es suficiente.
-                }
+
+                player.setDeltaMovement(Vec3.ZERO);
 
                 Vec3 anchor = anchorPositions.get(uuid);
                 if (player.position().distanceToSqr(anchor) > 2.25) {
                     player.teleportTo(anchor.x, anchor.y, anchor.z);
-                    player.setDeltaMovement(0, 0, 0);
                 }
                 
                 // Removed player.clearFire() as fire ticks will be restored on authentication.

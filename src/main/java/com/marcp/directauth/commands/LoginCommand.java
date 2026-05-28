@@ -125,7 +125,10 @@ public class LoginCommand {
 
             // Liberar ancla de restricción
             PlayerRestrictionHandler.removeAnchor(player);
-            
+
+            // Resincronizar HUD de efectos (limpiados al entrar en limbo)
+            PlayerRestrictionHandler.resyncEffectsToClient(player);
+
             player.sendSystemMessage(Component.literal(DirectAuth.getConfig().getLang().msgAuthenticated));
             return 1;
         } else {

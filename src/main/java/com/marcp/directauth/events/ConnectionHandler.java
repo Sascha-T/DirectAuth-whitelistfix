@@ -94,11 +94,16 @@ public class ConnectionHandler {
             if (!player.isDeadOrDying() && player.getHealth() > 0) {
                 DirectAuth.getPositionManager().savePosition(player);
             }
-            
+
             // Teletransportar al Spawn del Overworld
             ServerLevel overworld = player.getServer().overworld();
             BlockPos spawnPos = overworld.getSharedSpawnPos();
             player.teleportTo(overworld, spawnPos.getX() + 0.5, spawnPos.getY(), spawnPos.getZ() + 0.5, 0, 0);
+
+            // El mixin de tickEffects congela las duraciones en servidor. Limpiamos
+            // el HUD del cliente para que no muestre cuentas atrás fantasma; el
+            // estado real persiste y se resincronizará al autenticar.
+            PlayerRestrictionHandler.hideEffectsFromClient(player);
             
             if (userData == null) {
                 player.sendSystemMessage(Component.literal(DirectAuth.getConfig().getLang().msgWelcome));
