@@ -32,6 +32,7 @@ public class ModConfig {
     public int maxAccountsPerIP = 5;  // Max 5 accounts per IP
     
     // Restriction Settings
+    public boolean prioritizePremium = false; // if true, prevents cracked players using usernames of existing online profiles from joining
     public boolean freezeUnauthenticated = true;
     public boolean blockChat = true;
     public boolean blockInteractions = true;

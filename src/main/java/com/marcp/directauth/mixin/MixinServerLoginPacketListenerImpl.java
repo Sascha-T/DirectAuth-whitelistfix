@@ -7,6 +7,7 @@ import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.login.ClientboundHelloPacket;
 import net.minecraft.network.protocol.login.ServerboundHelloPacket;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.commands.WhitelistCommand;
 import net.minecraft.server.network.ServerLoginPacketListenerImpl;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -15,6 +16,8 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+import java.util.Optional;
 
 @Mixin(ServerLoginPacketListenerImpl.class)
 public abstract class MixinServerLoginPacketListenerImpl {
@@ -81,8 +84,23 @@ public abstract class MixinServerLoginPacketListenerImpl {
             data = DirectAuth.getDatabase().getUser(username);
         }
 
+        // is name associated with a premium user?
+        boolean whitelistCondition = false;
+        if(DirectAuth.getConfig().prioritizePremium) {
+            Optional<GameProfile> profile = server.getProfileCache().get(data.getUsername());
+            if(profile.isPresent()) {
+                GameProfile user = profile.get();
+                if(!user.getId().toString().substring(14, 15).equals("3")) {
+                    whitelistCondition = true;
+                }
+            }
+        }
+
         // Lógica de Premium (Handshake de encriptación)
-        if (data != null && data.isPremium() && data.getOnlineUUID() != null) {
+        if (
+                (data != null && data.isPremium() && data.getOnlineUUID() != null) ||
+                whitelistCondition
+        ) {
             try {
                 this.requestedUsername = username;
                 this.state = ServerLoginPacketListenerImpl.State.KEY;
